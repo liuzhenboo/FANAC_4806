@@ -1,0 +1,98 @@
+PROGRAM gi_ofst6
+%NOLOCKGROUP
+VAR
+port_type:INTEGER
+port_no1:INTEGER
+port_no2:INTEGER
+port_no3:INTEGER
+port_no4:INTEGER
+cur_val1:INTEGER
+cur_val2:INTEGER
+cur_val3:INTEGER
+cur_val4:INTEGER
+middle:INTEGER
+
+ava:REAL
+t1:INTEGER
+ofst:REAL
+ofst1:REAL
+ofst2:REAL
+status:INTEGER
+exit:BOOLEAN
+entry:INTEGER
+height:INTEGER
+min:INTEGER
+max:INTEGER
+r:INTEGER
+theta1:REAL
+s1:INTEGER
+s2:INTEGER
+temp1:REAL
+temp2:REAL
+angle:INTEGER
+
+BEGIN
+	IF UNINIT(height) THEN height=360;ENDIF
+	IF UNINIT(port_type) THEN port_type=18;ENDIF
+	IF UNINIT(port_no1) THEN port_no1=1;ENDIF
+	IF UNINIT(port_no2) THEN port_no2=2;ENDIF
+	IF UNINIT(port_no3) THEN port_no3=3;ENDIF
+	IF UNINIT(port_no4) THEN port_no4=4;ENDIF
+	IF UNINIT(t1) THEN t1=10;ENDIF
+	IF UNINIT(r) THEN r=3;ENDIF
+	IF UNINIT(angle) THEN angle=1;ENDIF
+	IF UNINIT(s1) THEN s1=300;ENDIF
+	IF UNINIT(s2) THEN s2=200;ENDIF
+	
+	middle = 0
+	exit=FALSE	
+	GET_VAR(entry,'*numreg*', '$NUMREG[20]' ,height, status)
+	GET_VAR(entry,'*numreg*', '$NUMREG[30]' ,r, status)
+	
+	-- 80, 81, 82
+	GET_VAR(entry,'*numreg*', '$NUMREG[80]' ,s1, status)
+	GET_VAR(entry,'*numreg*', '$NUMREG[81]' ,s2, status)
+	GET_VAR(entry,'*numreg*', '$NUMREG[82]' ,angle, status)
+	r = r + 1
+	min = height - r 
+	max = height + r
+	-- Loop
+	REPEAT
+	-- get measure
+	DELAY t1
+	GET_PORT_VAL(port_type, port_no1,  cur_val1,  status)
+	GET_PORT_VAL(port_type,port_no2,cur_val2,status)
+	GET_PORT_VAL(port_type,port_no3,cur_val3,status)
+	GET_PORT_VAL(port_type,port_no4,cur_val4,status)
+	-- t
+	ava = (cur_val1 + cur_val2)
+	ava = ava + cur_val3
+	ava =ava + cur_val4
+	ava = ava/4
+	IF (ava<=max) AND (ava>=min) THEN
+		ava = height
+	ENDIF
+	ofst = ava - height
+	--ofst =0
+	-- R  (up1,down2, left4, right3)
+	temp1 = (cur_val1 - cur_val2)/s1
+	temp2 = (cur_val3 - cur_val4)/s2
+	ofst1 =ATAN2(1.0, temp1) 
+	ofst2 =ATAN2(1.0, temp2)
+	IF (ofst1 <= 1.0*angle) AND (ofst1 >= -1.0*angle) THEN
+		ofst1 = 0
+	ENDIF
+	
+	IF (ofst2 <= 1.0*angle) AND (ofst2 >= -1.0*angle) THEN
+		ofst2 = 0
+	ENDIF
+	-- set system variable
+	SET_VAR(entry,'*system*','$DPM_SCH[1].$GRP[1].$OFS[3].$INI_OFS',ofst,status)
+	SET_VAR(entry,'*system*','$DPM_SCH[1].$GRP[1].$OFS[4].$INI_OFS',ofst1,status)
+	SET_VAR(entry,'*system*','$DPM_SCH[1].$GRP[1].$OFS[5].$INI_OFS',ofst2,status)
+	GET_VAR(entry,'*numreg*', '$NUMREG[10]' ,middle, status)
+	-- break flag
+	IF middle =1 THEN exit = TRUE; ENDIF
+	UNTIL exit=TRUE
+	
+END gi_ofst6
